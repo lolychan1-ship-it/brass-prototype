@@ -4,57 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brass: Birmingham</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .board {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .card {
+            width: 100px;
+            height: 150px;
+            border: 1px solid #ccc;
+            background-color: white;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
     <header>
-        <h1>Brass: Birmingham Interactive Board Game</h1>
+        <h1>Brass: Birmingham</h1>
+        <p>The interactive board game prototype.</p>
     </header>
-    <main>
-        <section id="game-board">
-            <!-- Game board layout goes here -->
-        </section>
-        <section id="player-management">
-            <h2>Player Management</h2>
-            <!-- Player management logic goes here -->
-        </section>
-        <section id="market-systems">
-            <h2>Market Systems</h2>
-            <!-- Market systems and logic go here -->
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2026 Brass: Birmingham</p>
-    </footer>
-    <script src="game.js"></script>
+    <div class="board">
+        <div class="card">Card 1</div>
+        <div class="card">Card 2</div>
+        <div class="card">Card 3</div>
+        <div class="card">Card 4</div>
+    </div>
+    <script>
+        // Game mechanics and functionality
+        function setupGame() {
+            console.log('Game is being set up...');
+            // Initialize game state and variables here
+        }
+        function startGame() {
+            console.log('Game started!');
+            // Implement game start logic
+        }
+        setupGame();
+        startGame();
+    </script>
 </body>
 </html>
-
-/* Styles for Brass: Birmingham */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-}
-header {
-    background: #333;
-    color: white;
-    padding: 10px;
-    text-align: center;
-}
-#game-board {
-    margin: 20px;
-    padding: 20px;
-    border: 1px solid #ccc;
-}
-section {
-    margin: 10px 0;
-    padding: 10px;
-    background: white;
-}
-footer {
-    text-align: center;
-    padding: 10px;
-    background: #333;
-    color: white;
-}
