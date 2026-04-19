@@ -1,61 +1,838 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brass: Birmingham</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .board {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        .card {
-            width: 100px;
-            height: 150px;
-            border: 1px solid #ccc;
-            background-color: white;
-            margin: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-    </style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,'Anthropic Sans',sans-serif);background:var(--color-background-tertiary,#f5f4f0);color:var(--color-text-primary,#1a1a18);font-size:13px}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+#app{display:grid;grid-template-rows:auto 1fr auto;min-height:600px;max-height:820px}
+#header{background:var(--color-background-primary,#fff);border-bottom:0.5px solid var(--color-border-tertiary);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.era-badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.era-canal{background:#E1F5EE;color:#0F6E56}
+.era-rail{background:#FAEEDA;color:#854F0B}
+#round-info{font-size:12px;color:var(--color-text-secondary);margin-left:auto}
+#main{display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+#board-area{overflow:auto;padding:12px;background:var(--color-background-secondary,#f0ede8)}
+#board{position:relative;width:640px;min-height:480px;background:linear-gradient(135deg,#2d4a2d 0%,#1a3a1a 100%);border-radius:12px;border:2px solid #1a2e1a}
+.location{position:absolute;cursor:pointer;z-index:2}
+.loc-box{background:rgba(255,255,255,0.92);border:1.5px solid #555;border-radius:6px;padding:3px 6px;font-size:10px;font-weight:500;text-align:center;white-space:nowrap;transition:all .15s;min-width:60px}
+.loc-box:hover{background:#fff;border-color:#333;transform:scale(1.05)}
+.loc-box.has-tile{border-color:#c0a060}
+.loc-name{font-size:9px;color:#555;line-height:1.2}
+.loc-slots{display:flex;gap:2px;margin-top:2px;justify-content:center;flex-wrap:wrap}
+.slot{width:14px;height:14px;border-radius:2px;border:1px solid #aaa;font-size:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#f5f5f0}
+.slot.p0{background:#ddeeff;border-color:#4488cc}
+.slot.p1{background:#ffeedd;border-color:#cc8844}
+.slot.p2{background:#ddffdd;border-color:#44aa44}
+.slot.p3{background:#ffddee;border-color:#cc4488}
+.slot.flipped{opacity:.7;border-style:dashed}
+#links-canvas{position:absolute;top:0;left:0;width:640px;height:480px;pointer-events:none;z-index:1}
+.merchant{position:absolute;background:rgba(255,215,100,0.9);border:1.5px solid #aa7700;border-radius:6px;padding:3px 6px;font-size:9px;font-weight:500;text-align:center;z-index:3;cursor:pointer;min-width:55px}
+.merchant:hover{background:rgba(255,235,150,1)}
+.merchant .mer-name{font-size:8px;color:#553300}
+#markets{position:absolute;bottom:8px;left:8px;display:flex;gap:8px;z-index:5}
+.market{background:rgba(255,255,255,0.95);border:1.5px solid #888;border-radius:8px;padding:6px;min-width:90px}
+.market h3{font-size:9px;color:#666;margin-bottom:4px;text-align:center;font-weight:500}
+.market-row{display:flex;gap:2px;align-items:center;margin-bottom:2px}
+.market-price{font-size:8px;color:#555;min-width:16px;text-align:right}
+.market-cube{width:10px;height:10px;border-radius:2px;border:1px solid rgba(0,0,0,0.3)}
+.coal-cube{background:#333}
+.iron-cube{background:#e07020}
+.market-slot{width:10px;height:10px;border-radius:2px;border:1px dashed #aaa}
+#sidebar{background:var(--color-background-primary,#fff);border-left:0.5px solid var(--color-border-tertiary);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.panel h3{font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.player-card{border:1.5px solid var(--color-border-tertiary);border-radius:8px;padding:8px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.player-card.active{border-width:2px}
+.player-card.p0{border-color:#4488cc}.player-card.p1{border-color:#cc8844}.player-card.p2{border-color:#44aa44}.player-card.p3{border-color:#cc4488}
+.player-card.active.p0{background:#ddeeff20}.player-card.active.p1{background:#ffeedd20}.player-card.active.p2{background:#ddffdd20}.player-card.active.p3{background:#ffddee20}
+.p-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.p-name{font-weight:500;font-size:12px}
+.p-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px}
+.stat{text-align:center}
+.stat-val{font-weight:500;font-size:13px}
+.stat-lbl{color:var(--color-text-secondary)}
+
+/* ── HAND / CARDS ── */
+#hand-section{background:var(--color-background-secondary,#f5f4f0);border-radius:10px;padding:10px}
+#hand-section .panel-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+#hand-display{display:flex;flex-direction:column;gap:5px}
+.card{border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;background:var(--color-background-primary,#fff);cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:7px;line-height:1.3}
+.card:hover{border-color:#666;background:#fff;transform:translateX(2px)}
+.card.selected{border-color:#2244aa;background:#ddeeff;border-width:1.5px;transform:translateX(4px)}
+.card-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.card-body{display:flex;flex-direction:column}
+.card-type{font-size:9px;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.03em}
+.card-name{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.card.wild-loc{background:#E1F5EE;border-color:#44aa88}
+.card.wild-loc .card-type{color:#0F6E56}
+.card.wild-ind{background:#FAEEDA;border-color:#cc8844}
+.card.wild-ind .card-type{color:#854F0B}
+.card.location{background:#f0f0ff;border-color:#8888cc}
+.card.location .card-type{color:#4444aa}
+.card.industry{background:#fff5f0;border-color:#cc9988}
+.card.industry .card-type{color:#994422}
+.hand-meta{font-size:10px;color:var(--color-text-secondary);margin-top:4px}
+
+#action-bar{background:var(--color-background-primary,#fff);border-top:0.5px solid var(--color-border-tertiary);padding:8px 12px;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.action-btn{padding:6px 10px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:transparent;cursor:pointer;font-size:11px;font-weight:500;transition:all .15s;white-space:nowrap}
+.action-btn:hover{background:var(--color-background-secondary)}
+.action-btn:active{transform:scale(0.97)}
+.action-btn.active{background:#e6f1fb;border-color:#185fa5;color:#185fa5}
+.action-btn.danger{border-color:#cc4444;color:#cc4444}
+.action-btn.danger:hover{background:#ffeeee}
+#status-msg{font-size:11px;color:var(--color-text-secondary);margin-left:auto;max-width:220px;text-align:right;line-height:1.4}
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;z-index:100;align-items:center;justify-content:center}
+#modal-overlay.open{display:flex}
+#modal{background:var(--color-background-primary,#fff);border-radius:12px;border:0.5px solid var(--color-border-tertiary);padding:20px;max-width:360px;width:90%;max-height:80vh;overflow-y:auto}
+#modal h2{font-size:15px;font-weight:500;margin-bottom:12px}
+.modal-opts{display:flex;flex-direction:column;gap:6px}
+.modal-opt{padding:8px 12px;border:0.5px solid var(--color-border-secondary);border-radius:8px;cursor:pointer;font-size:12px;transition:all .15s}
+.modal-opt:hover{background:var(--color-background-secondary)}
+.modal-opt.selected{border-color:#2244aa;background:#ddeeff}
+#modal-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.modal-btn{padding:6px 14px;border:0.5px solid var(--color-border-secondary);border-radius:6px;cursor:pointer;font-size:12px;background:transparent;transition:all .15s}
+.modal-btn:hover{background:var(--color-background-secondary)}
+.modal-btn.primary{background:#e6f1fb;border-color:#185fa5;color:#185fa5}
+#game-log{font-size:10px;color:var(--color-text-secondary);max-height:100px;overflow-y:auto;line-height:1.6}
+</style>
 </head>
 <body>
-    <header>
-        <h1>Brass: Birmingham</h1>
-        <p>The interactive board game prototype.</p>
-    </header>
-    <div class="board">
-        <div class="card">Card 1</div>
-        <div class="card">Card 2</div>
-        <div class="card">Card 3</div>
-        <div class="card">Card 4</div>
+<h2 class="sr-only">Brass: Birmingham — 4-player digital board game</h2>
+<div id="app">
+<div id="header">
+  <div style="font-size:16px;font-weight:500;letter-spacing:.05em">BRASS: BIRMINGHAM</div>
+  <span id="era-badge" class="era-badge era-canal">Canal Era</span>
+  <span id="round-info">Round <span id="round-num">1</span> / <span id="round-total">10</span></span>
+  <button class="action-btn" onclick="showScoring()">Scores</button>
+  <button class="action-btn danger" onclick="if(confirm('Restart game?'))initGame()">Restart</button>
+</div>
+
+<div id="main">
+  <div id="board-area">
+    <div id="board">
+      <canvas id="links-canvas" width="640" height="480"></canvas>
+      <div id="markets">
+        <div class="market" id="coal-market"><h3>Coal Market</h3></div>
+        <div class="market" id="iron-market"><h3>Iron Market</h3></div>
+      </div>
     </div>
-    <script>
-        // Game mechanics and functionality
-        function setupGame() {
-            console.log('Game is being set up...');
-            // Initialize game state and variables here
-        }
-        function startGame() {
-            console.log('Game started!');
-            // Implement game start logic
-        }
-        setupGame();
-        startGame();
-    </script>
+  </div>
+
+  <div id="sidebar">
+    <div class="panel">
+      <h3>Players</h3>
+      <div id="players-list"></div>
+    </div>
+
+    <div id="hand-section">
+      <div class="panel-title">Hand — <span id="cur-player-name">Player 1</span></div>
+      <div id="hand-display"></div>
+      <div class="hand-meta">Deck: <span id="deck-count">0</span> cards remaining</div>
+    </div>
+
+    <div class="panel">
+      <h3>Resources on board</h3>
+      <div id="resources-display" style="font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:3px"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Log</h3>
+      <div id="game-log"></div>
+    </div>
+  </div>
+</div>
+
+<div id="action-bar">
+  <button class="action-btn" id="btn-build" onclick="startAction('build')">🏭 Build</button>
+  <button class="action-btn" id="btn-network" onclick="startAction('network')">🔗 Network</button>
+  <button class="action-btn" id="btn-develop" onclick="startAction('develop')">📈 Develop</button>
+  <button class="action-btn" id="btn-sell" onclick="startAction('sell')">💰 Sell</button>
+  <button class="action-btn" id="btn-loan" onclick="startAction('loan')">🏦 Loan</button>
+  <button class="action-btn" id="btn-scout" onclick="startAction('scout')">🃏 Scout</button>
+  <button class="action-btn" id="btn-pass" onclick="doPass()">Pass</button>
+  <button class="action-btn" id="btn-end-turn" onclick="endTurn()" style="font-weight:500">End Turn →</button>
+  <span id="status-msg">Select an action</span>
+</div>
+</div>
+
+<div id="modal-overlay">
+<div id="modal">
+  <h2 id="modal-title">Choose</h2>
+  <div class="modal-opts" id="modal-opts"></div>
+  <div id="modal-actions">
+    <button class="modal-btn" onclick="closeModal()">Cancel</button>
+    <button class="modal-btn primary" onclick="confirmModal()">Confirm</button>
+  </div>
+</div>
+</div>
+
+<script>
+const PLAYER_NAMES = ['Arkwright','Watt','Brunel','Bessemer'];
+const PLAYER_COLORS = ['#4488cc','#cc8844','#44aa44','#cc4488'];
+const PLAYER_COLOR_CLASSES = ['p0','p1','p2','p3'];
+
+// Full display names for locations
+const LOC_DISPLAY = {
+  warrington:'Warrington', stoke:'Stoke-on-Trent', leek:'Leek', belper:'Belper',
+  nottingham:'Nottingham', derby:'Derby', uttoxeter:'Uttoxeter', stone:'Stone',
+  stafford:'Stafford', burton:'Burton-on-Trent', tamworth:'Tamworth', cannock:'Cannock',
+  lichfield:'Lichfield', nuneaton:'Nuneaton', coalbrookdale:'Coalbrookdale',
+  shrewsbury:'Shrewsbury', wolverhampton:'Wolverhampton', walsall:'Walsall',
+  coventry:'Coventry', dudley:'Dudley', birmingham:'Birmingham', redditch:'Redditch',
+  coventry2:'Coventry East', kidderminster:'Kidderminster', oxford:'Oxford',
+  worcester:'Worcester', gloucester:'Gloucester', farm1:'Farm Brewery', farm2:'Farm Brewery'
+};
+
+// Full display names for industries
+const IND_DISPLAY = {
+  coal:'Coal Mine', iron:'Iron Works', cotton:'Cotton Mill',
+  manufacturer:'Manufacturer', pottery:'Pottery', brewery:'Brewery'
+};
+
+// Icons per type
+const IND_ICONS = {coal:'⬛',iron:'🟧',cotton:'🟦',manufacturer:'🟨',pottery:'🟫',brewery:'🟩'};
+const LOC_ICON = '📍';
+
+const LOCATIONS = [
+  {id:'warrington',name:'Warrington',x:280,y:20,slots:['any','any'],merchant:true},
+  {id:'stoke',name:'Stoke',x:390,y:60,slots:['pottery','coal','any']},
+  {id:'leek',name:'Leek',x:480,y:55,slots:['cotton','any']},
+  {id:'belper',name:'Belper',x:545,y:80,slots:['cotton','iron']},
+  {id:'nottingham',name:'Nottingham',x:580,y:30,slots:['any','any'],merchant:true},
+  {id:'derby',name:'Derby',x:530,y:120,slots:['cotton','manufacturer']},
+  {id:'uttoxeter',name:'Uttoxeter',x:440,y:115,slots:['cotton','manufacturer']},
+  {id:'stone',name:'Stone',x:360,y:100,slots:['pottery','any']},
+  {id:'stafford',name:'Stafford',x:310,y:140,slots:['pottery','manufacturer']},
+  {id:'burton',name:'Burton',x:475,y:160,slots:['iron','any']},
+  {id:'tamworth',name:'Tamworth',x:510,y:200,slots:['coal','manufacturer']},
+  {id:'cannock',name:'Cannock',x:310,y:215,slots:['coal','iron']},
+  {id:'lichfield',name:'Lichfield',x:430,y:220,slots:['pottery','any']},
+  {id:'nuneaton',name:'Nuneaton',x:520,y:255,slots:['coal','any']},
+  {id:'coalbrookdale',name:'Coalbrookdale',x:175,y:240,slots:['coal','iron','iron']},
+  {id:'shrewsbury',name:'Shrewsbury',x:100,y:195,slots:['any','any'],merchant:true},
+  {id:'wolverhampton',name:'Wolverhampton',x:265,y:270,slots:['coal','manufacturer']},
+  {id:'walsall',name:'Walsall',x:365,y:275,slots:['iron','manufacturer']},
+  {id:'coventry',name:'Coventry',x:530,y:310,slots:['cotton','iron','manufacturer']},
+  {id:'dudley',name:'Dudley',x:295,y:320,slots:['coal','iron']},
+  {id:'birmingham',name:'Birmingham',x:400,y:330,slots:['cotton','manufacturer','any','any']},
+  {id:'redditch',name:'Redditch',x:360,y:385,slots:['iron','manufacturer']},
+  {id:'coventry2',name:'Cov. East',x:490,y:365,slots:['cotton','any']},
+  {id:'kidderminster',name:'Kidderminster',x:255,y:375,slots:['coal','cotton']},
+  {id:'oxford',name:'Oxford',x:490,y:430,slots:['any','any'],merchant:true},
+  {id:'worcester',name:'Worcester',x:290,y:435,slots:['pottery','any'],merchant:true},
+  {id:'gloucester',name:'Gloucester',x:220,y:455,slots:['pottery','any'],merchant:true},
+  {id:'farm1',name:'Farm',x:240,y:250,slots:['brewery'],isFarm:true},
+  {id:'farm2',name:'Farm',x:195,y:405,slots:['brewery'],isFarm:true},
+];
+
+const CONNECTIONS = [
+  ['warrington','stoke'],['warrington','stone'],
+  ['stoke','uttoxeter'],['stoke','leek'],['stoke','stone'],['stoke','derby'],
+  ['leek','belper'],['belper','derby'],['belper','nottingham'],
+  ['derby','uttoxeter'],['derby','burton'],['derby','nottingham'],
+  ['uttoxeter','stone'],['uttoxeter','stafford'],['uttoxeter','burton'],['uttoxeter','tamworth'],
+  ['stone','stafford'],['stafford','cannock'],['stafford','lichfield'],['stafford','burton'],
+  ['burton','tamworth'],['burton','lichfield'],['burton','nuneaton'],
+  ['tamworth','lichfield'],['tamworth','nuneaton'],['lichfield','nuneaton'],
+  ['lichfield','walsall'],['lichfield','cannock'],['cannock','wolverhampton'],
+  ['cannock','walsall'],['cannock','coalbrookdale'],['cannock','farm1'],
+  ['shrewsbury','coalbrookdale'],['shrewsbury','wolverhampton'],
+  ['coalbrookdale','wolverhampton'],['wolverhampton','walsall'],
+  ['wolverhampton','dudley'],['wolverhampton','birmingham'],
+  ['walsall','birmingham'],['walsall','nuneaton'],['nuneaton','coventry'],
+  ['nuneaton','birmingham'],['coventry','coventry2'],['coventry','oxford'],
+  ['birmingham','dudley'],['birmingham','redditch'],['birmingham','coventry'],['birmingham','coventry2'],
+  ['dudley','kidderminster'],['kidderminster','worcester'],['kidderminster','farm2'],
+  ['kidderminster','redditch'],['redditch','worcester'],['redditch','oxford'],
+  ['redditch','coventry2'],['worcester','gloucester'],['worcester','farm2'],['gloucester','oxford'],
+];
+
+const INDUSTRIES = {
+  coal:    {name:'Coal Mine',levels:[{cost:1,coal:2,vp:1,income:2},{cost:2,coal:3,vp:2,income:3},{cost:3,coal:4,vp:3,income:4},{cost:4,coal:6,vp:7,income:5}]},
+  iron:    {name:'Iron Works',levels:[{cost:5,iron:4,vp:3,income:3},{cost:7,iron:5,vp:5,income:4},{cost:9,iron:6,vp:7,income:5},{cost:12,iron:8,vp:9,income:6}]},
+  cotton:  {name:'Cotton Mill',levels:[{cost:12,beer:1,vp:5,income:5},{cost:14,beer:1,vp:5,income:4},{cost:16,beer:2,vp:9,income:6},{cost:18,beer:2,vp:12,income:6},{cost:20,beer:2,vp:16,income:7},{cost:22,beer:3,vp:18,income:8}]},
+  manufacturer:{name:'Manufacturer',levels:[{cost:8,beer:0,vp:4,income:2},{cost:10,beer:0,vp:4,income:2},{cost:12,beer:1,vp:8,income:4},{cost:14,beer:1,vp:6,income:3},{cost:16,beer:2,vp:8,income:5},{cost:20,beer:2,vp:10,income:5},{cost:22,beer:3,vp:12,income:6}]},
+  pottery: {name:'Pottery',levels:[{cost:17,beer:2,vp:10,income:5},{cost:0,beer:1,vp:11,income:5},{cost:22,beer:2,vp:18,income:8},{cost:24,beer:2,vp:20,income:9}]},
+  brewery: {name:'Brewery',levels:[{cost:5,beer:1,vp:4,income:2},{cost:7,beer:1,vp:4,income:3},{cost:9,beer:2,vp:7,income:4},{cost:11,beer:2,vp:9,income:5}]},
+};
+
+const MERCHANT_CONFIGS = {
+  warrington:{bonus:'money',bonusAmt:5,icons:['cotton','manufacturer'],beer:true},
+  nottingham:{bonus:'vp',bonusAmt:3,icons:['cotton','pottery'],beer:true},
+  shrewsbury:{bonus:'vp',bonusAmt:2,icons:['manufacturer','pottery'],beer:true},
+  oxford:    {bonus:'income',bonusAmt:2,icons:['pottery','manufacturer'],beer:true},
+  worcester: {bonus:null,icons:['cotton','iron'],beer:true},
+  gloucester:{bonus:'develop',icons:['pottery','manufacturer'],beer:true},
+};
+
+let G = {};
+
+function initGame(){
+  G={era:'canal',round:1,maxRoundsCanal:10,maxRoundsRail:9,
+    turnOrder:[0,1,2,3],currentPlayerIdx:0,actionsLeft:1,
+    selectedCard:null,selectedAction:null,pendingActionStep:null,
+    modalCallback:null,modalSelected:null,players:[],
+    board:{},coalMarket:[],ironMarket:[],merchantBeers:{},
+    drawDeck:[],wildLoc:4,wildInd:4,log:[],gameOver:false};
+
+  LOCATIONS.forEach(loc=>G.board[loc.id]={tiles:[],ownedLinks:[]});
+
+  // Build deck
+  const deck=[];
+  ['warrington','stoke','leek','belper','nottingham','derby','uttoxeter','stone','stafford','burton','tamworth','cannock','lichfield','nuneaton','coalbrookdale','shrewsbury','wolverhampton','walsall','coventry','dudley','birmingham','redditch','kidderminster','oxford','worcester','gloucester']
+    .forEach(l=>{deck.push({type:'location',loc:l});deck.push({type:'location',loc:l});});
+  Object.keys(INDUSTRIES).forEach(ind=>{[1,2,3,4,5].forEach(()=>deck.push({type:'industry',ind}));});
+  shuffle(deck);
+  G.drawDeck=deck;
+
+  G.players=PLAYER_NAMES.map((name,i)=>({
+    id:i,name,money:17,vp:0,income:10,hand:[],discard:[],moneySpent:0,links:[],
+    industryMat:{
+      coal:[{type:'coal',level:1},{type:'coal',level:1},{type:'coal',level:2},{type:'coal',level:3}],
+      iron:[{type:'iron',level:1},{type:'iron',level:1},{type:'iron',level:2},{type:'iron',level:3}],
+      cotton:[{type:'cotton',level:1},{type:'cotton',level:2},{type:'cotton',level:3},{type:'cotton',level:4},{type:'cotton',level:5},{type:'cotton',level:6}],
+      manufacturer:[{type:'manufacturer',level:1},{type:'manufacturer',level:2},{type:'manufacturer',level:3},{type:'manufacturer',level:4},{type:'manufacturer',level:5}],
+      pottery:[{type:'pottery',level:1},{type:'pottery',level:2},{type:'pottery',level:3},{type:'pottery',level:4}],
+      brewery:[{type:'brewery',level:1},{type:'brewery',level:2},{type:'brewery',level:3},{type:'brewery',level:4}],
+    }
+  }));
+
+  G.players.forEach(p=>{
+    for(let i=0;i<8;i++) p.hand.push(G.drawDeck.pop()||{type:'location',loc:'birmingham'});
+    p.discard=[G.drawDeck.pop()||{type:'location',loc:'birmingham'}];
+  });
+
+  const coalPrices=[2,2,3,3,3,4,4,5,5,6,6,7,7,8];
+  G.coalMarket=coalPrices.map((p,i)=>({price:p,filled:i>0}));
+  const ironPrices=[1,1,2,2,3,3,4,4,5,5,6,6];
+  G.ironMarket=ironPrices.map((p,i)=>({price:p,filled:i<10}));
+  Object.keys(MERCHANT_CONFIGS).forEach(loc=>G.merchantBeers[loc]=1);
+  G.turnOrder=shuffle([0,1,2,3]);
+
+  addLog('Game started! Canal Era begins.');
+  addLog(`Turn order: ${G.turnOrder.map(i=>PLAYER_NAMES[i]).join(' → ')}`);
+  render();
+}
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function currentPlayer(){return G.players[G.turnOrder[G.currentPlayerIdx]];}
+
+// ── CARD LABELS (the fix) ──
+function cardLabel(card){
+  if(card.type==='wild-loc') return 'Wild Location';
+  if(card.type==='wild-ind') return 'Wild Industry';
+  if(card.type==='location') return LOC_DISPLAY[card.loc] || card.loc;
+  if(card.type==='industry') return IND_DISPLAY[card.ind] || card.ind;
+  return '?';
+}
+function cardIcon(card){
+  if(card.type==='wild-loc') return '⭐';
+  if(card.type==='wild-ind') return '⭐';
+  if(card.type==='location') return LOC_ICON;
+  if(card.type==='industry') return IND_ICONS[card.ind]||'?';
+  return '?';
+}
+function cardTypeLabel(card){
+  if(card.type==='wild-loc') return 'Wild Location';
+  if(card.type==='wild-ind') return 'Wild Industry';
+  if(card.type==='location') return 'Location card';
+  if(card.type==='industry') return 'Industry card';
+  return '';
+}
+
+function startAction(type){
+  if(G.actionsLeft<=0){setStatus('No actions left! End your turn.');return;}
+  if(G.gameOver){setStatus('Game over!');return;}
+  G.selectedAction=type;G.selectedCard=null;
+  document.querySelectorAll('.action-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+type)?.classList.add('active');
+  if(type==='build'){setStatus('Select a card from your hand, then click a location.');G.pendingActionStep='pick-card';renderHand();}
+  else if(type==='network'){setStatus('Select a card, then click a green connection line.');G.pendingActionStep='pick-card';renderHand();}
+  else if(type==='develop') doDevelop();
+  else if(type==='sell') doSell();
+  else if(type==='loan') doLoan();
+  else if(type==='scout') doScout();
+}
+
+function doDevelop(){
+  const p=currentPlayer();
+  const opts=Object.keys(p.industryMat).filter(t=>p.industryMat[t].length>0)
+    .map(t=>({id:t,label:`${IND_DISPLAY[t]} — remove Level ${p.industryMat[t][0].level} (costs 1 iron)`}));
+  if(!opts.length){setStatus('No tiles to develop!');return;}
+  showModal('Develop — remove lowest tile (costs 1 iron)',()=>{
+    const type=G.modalSelected;if(!type)return;
+    const mat=p.industryMat[type];if(!mat||!mat.length)return;
+    const removed=mat.shift();
+    consumeIron(p,1);
+    addLog(`${p.name} developed ${IND_DISPLAY[type]} (removed Level ${removed.level})`);
+    spendAction(null);
+  },opts);
+}
+
+function doSell(){
+  const p=currentPlayer();
+  const sellable=[];
+  Object.entries(G.board).forEach(([locId,locData])=>{
+    locData.tiles.forEach((tile,tIdx)=>{
+      if(tile.player===p.id&&!tile.flipped&&['cotton','manufacturer','pottery'].includes(tile.type)){
+        const merchants=getConnectedMerchants(locId,p.id);
+        if(merchants.length>0) sellable.push({locId,tIdx,tile,merchants});
+      }
+    });
+  });
+  if(!sellable.length){setStatus('No sellable tiles connected to merchants!');return;}
+  const opts=sellable.map((s,i)=>({id:i,label:`${IND_DISPLAY[s.tile.type]} Lvl ${s.tile.level} @ ${LOC_DISPLAY[s.locId]||s.locId} → ${s.merchants.map(m=>m.id).join(', ')}`}));
+  showModal('Sell — flip an industry tile',()=>{
+    const idx=G.modalSelected;if(idx===null)return;
+    const s=sellable[idx];const tile=s.tile;
+    const ind=INDUSTRIES[tile.type];const lvl=ind.levels[tile.level-1];
+    if(lvl.beer>0){const ok=consumeBeer(p,lvl.beer,s.locId);if(!ok){setStatus('Not enough beer!');return;}}
+    G.board[s.locId].tiles[s.tIdx].flipped=true;
+    advanceIncome(p,lvl.income||2);
+    const merch=s.merchants[0];
+    if(merch&&G.merchantBeers[merch.id]>0){G.merchantBeers[merch.id]--;applyMerchantBonus(p,merch.id);}
+    addLog(`${p.name} sold ${IND_DISPLAY[tile.type]} Lvl ${tile.level} @ ${LOC_DISPLAY[s.locId]||s.locId}`);
+    spendAction(null);
+  },opts);
+}
+
+function doLoan(){
+  const p=currentPlayer();
+  if(p.income<=-3){setStatus("Can't loan — income would go below -10!");return;}
+  showModal('Take a £30 loan — income drops 3 levels',()=>{
+    p.money+=30;p.income=Math.max(-10,p.income-3);
+    addLog(`${p.name} took a £30 loan (income now ${p.income})`);
+    spendAction(null);
+  },[{id:'confirm',label:'Take £30 loan → income drops 3 levels'}]);
+}
+
+function doScout(){
+  const p=currentPlayer();
+  if(p.hand.some(c=>c.type==='wild-loc'||c.type==='wild-ind')){setStatus("Can't scout — already have a Wild card!");return;}
+  if(p.hand.length<3){setStatus("Need at least 3 cards to scout!");return;}
+  showModal('Scout — discard 3 cards, gain Wild Location + Wild Industry',()=>{
+    p.discard.push(...p.hand.splice(0,3));
+    p.hand.push({type:'wild-loc'});p.hand.push({type:'wild-ind'});
+    addLog(`${p.name} scouted — gained Wild Location + Wild Industry`);
+    spendAction(null);
+  },[{id:'confirm',label:'Discard first 3 cards → gain Wild Location + Wild Industry'}]);
+}
+
+function doPass(){
+  if(G.actionsLeft<=0){setStatus('No actions left!');return;}
+  const p=currentPlayer();
+  if(p.hand.length>0){const c=p.hand.splice(0,1)[0];p.discard.push(c);addLog(`${p.name} passed`);}
+  spendAction(null);
+}
+
+function spendAction(card){
+  const p=currentPlayer();
+  if(card){
+    const idx=p.hand.indexOf(card);
+    if(idx>=0) p.hand.splice(idx,1);
+    if(card.type==='wild-loc'||card.type==='wild-ind') {}
+    else p.discard.push(card);
+  }
+  G.actionsLeft--;G.selectedCard=null;G.selectedAction=null;G.pendingActionStep=null;
+  document.querySelectorAll('.action-btn').forEach(b=>b.classList.remove('active'));
+  if(G.actionsLeft<=0) setStatus(`${p.name} done! Click "End Turn →"`);
+  else setStatus(`${p.name}: ${G.actionsLeft} action(s) left`);
+  render();
+}
+
+function clickLocation(locId){
+  if(G.selectedAction==='build'&&G.pendingActionStep==='pick-location') executeBuild(locId);
+}
+
+function executeBuild(locId){
+  const p=currentPlayer();const card=G.selectedCard;
+  if(!card){setStatus('Pick a card from your hand first!');return;}
+  const loc=LOCATIONS.find(l=>l.id===locId);const boardLoc=G.board[locId];
+  const inNetwork=isInNetwork(locId,p.id)||card.type==='location'||card.type==='wild-loc';
+  if(!inNetwork){setStatus('Location not in your network! Use a Location card or connect via links.');return;}
+  const available=Object.keys(p.industryMat).filter(t=>{
+    if(!p.industryMat[t].length)return false;
+    return loc.slots.includes(t)||loc.slots.includes('any');
+  });
+  if(!available.length){setStatus('No valid industry tiles for this location!');return;}
+  const opts=available.map(t=>{
+    const lvl=p.industryMat[t][0].level;
+    const cost=INDUSTRIES[t].levels[lvl-1]?.cost||0;
+    return {id:t,label:`${IND_DISPLAY[t]} — Level ${lvl} — Cost £${cost}`};
+  });
+  showModal(`Build at ${LOC_DISPLAY[locId]||locId}`,()=>{
+    const type=G.modalSelected;if(!type)return;
+    const mat=p.industryMat[type];const tile=mat[0];
+    const ind=INDUSTRIES[type];const lvlData=ind.levels[tile.level-1];
+    const cost=lvlData?.cost||0;
+    if(p.money<cost){setStatus(`Need £${cost}, you have £${p.money}!`);closeModal();return;}
+    p.money-=cost;p.moneySpent+=cost;
+    const newTile={player:p.id,type,level:tile.level,flipped:false,
+      resources:type==='coal'?lvlData.coal:type==='iron'?lvlData.iron:type==='brewery'?(G.era==='canal'?1:2):0};
+    boardLoc.tiles.push(newTile);mat.shift();
+    if(type==='coal'&&isConnectedToMerchant(locId)){
+      let earned=0;
+      while(newTile.resources>0){const slot=G.coalMarket.find(s=>!s.filled);if(!slot)break;slot.filled=true;earned+=slot.price;newTile.resources--;}
+      if(newTile.resources===0){newTile.flipped=true;advanceIncome(p,lvlData.income||1);}
+      p.money+=earned;if(earned>0)addLog(`  Coal → market, earned £${earned}`);
+    }
+    if(type==='iron'){
+      let earned=0;
+      while(newTile.resources>0){const slot=G.ironMarket.find(s=>!s.filled);if(!slot)break;slot.filled=true;earned+=slot.price;newTile.resources--;}
+      if(newTile.resources===0){newTile.flipped=true;advanceIncome(p,lvlData.income||1);}
+      p.money+=earned;if(earned>0)addLog(`  Iron → market, earned £${earned}`);
+    }
+    addLog(`${p.name} built ${IND_DISPLAY[type]} Lvl ${tile.level} @ ${LOC_DISPLAY[locId]||locId} (£${cost})`);
+    spendAction(card);closeModal();
+  },opts);
+}
+
+function clickConnection(fromId,toId){
+  if(G.selectedAction!=='network'||G.pendingActionStep!=='pick-location')return;
+  const p=currentPlayer();const card=G.selectedCard;
+  if(!card){setStatus('Pick a card first!');return;}
+  const cost=G.era==='canal'?3:5;
+  const exists=G.players.some(pl=>pl.links.some(l=>(l.from===fromId&&l.to===toId)||(l.from===toId&&l.to===fromId)));
+  if(exists){setStatus('Already has a link here!');return;}
+  const adj=isInNetwork(fromId,p.id)||isInNetwork(toId,p.id)||G.board[fromId].tiles.length===0;
+  if(p.money<cost){setStatus(`Need £${cost}!`);return;}
+  if(G.era==='rail'){
+    const coalPrice=G.coalMarket.find(s=>s.filled)?.price||8;
+    if(p.money<cost+coalPrice){setStatus(`Need £${cost+coalPrice} (link + coal)!`);return;}
+    p.money-=coalPrice;const slot=G.coalMarket.find(s=>s.filled);if(slot)slot.filled=false;
+  }
+  p.money-=cost;p.moneySpent+=cost;
+  p.links.push({from:fromId,to:toId,era:G.era});
+  const fromN=LOC_DISPLAY[fromId]||fromId,toN=LOC_DISPLAY[toId]||toId;
+  addLog(`${p.name} built ${G.era} link: ${fromN} — ${toN} (£${cost})`);
+  spendAction(card);drawLinks();
+}
+
+function isInNetwork(locId,playerId){
+  const p=G.players[playerId];
+  if(G.board[locId].tiles.some(t=>t.player===playerId))return true;
+  return p.links.some(l=>l.from===locId||l.to===locId);
+}
+function isConnectedToMerchant(locId){
+  return Object.keys(MERCHANT_CONFIGS).some(mid=>CONNECTIONS.some(c=>c.includes(locId)&&c.includes(mid)));
+}
+function getConnectedMerchants(locId,playerId){
+  const allLinks=G.players.flatMap(p=>p.links);
+  const visited=new Set([locId]);const queue=[locId];const merchants=[];
+  while(queue.length){
+    const cur=queue.shift();
+    if(MERCHANT_CONFIGS[cur])merchants.push({id:cur,...MERCHANT_CONFIGS[cur]});
+    CONNECTIONS.forEach(c=>{const other=c[0]===cur?c[1]:c[1]===cur?c[0]:null;
+      if(other&&!visited.has(other)&&allLinks.some(l=>(l.from===cur&&l.to===other)||(l.from===other&&l.to===cur))){visited.add(other);queue.push(other);}
+    });
+  }
+  if(G.era==='canal'){
+    CONNECTIONS.forEach(c=>{const other=c[0]===locId?c[1]:c[1]===locId?c[0]:null;
+      if(other&&MERCHANT_CONFIGS[other]&&!merchants.find(m=>m.id===other))merchants.push({id:other,...MERCHANT_CONFIGS[other]});
+    });
+  }
+  return merchants;
+}
+function consumeIron(player,amount){
+  for(let i=0;i<amount;i++){
+    let done=false;
+    for(const[,locData]of Object.entries(G.board)){
+      const t=locData.tiles.find(t=>t.type==='iron'&&!t.flipped&&t.resources>0);
+      if(t){t.resources--;if(t.resources===0){t.flipped=true;advanceIncome(G.players[t.player],INDUSTRIES.iron.levels[t.level-1]?.income||1);}done=true;break;}
+    }
+    if(!done){const slot=G.ironMarket.find(s=>s.filled);if(slot){player.money-=slot.price;slot.filled=false;}}
+  }
+}
+function consumeBeer(player,amount,locId){
+  let rem=amount;
+  for(const[,locData]of Object.entries(G.board)){
+    if(rem<=0)break;
+    const t=locData.tiles.find(t=>t.type==='brewery'&&t.player===player.id&&!t.flipped&&t.resources>0);
+    if(t){t.resources--;rem--;if(t.resources===0){t.flipped=true;advanceIncome(player,INDUSTRIES.brewery.levels[t.level-1]?.income||1);}}
+  }
+  if(rem>0){for(const mid of Object.keys(G.merchantBeers)){if(rem<=0)break;if(G.merchantBeers[mid]>0){G.merchantBeers[mid]--;rem--;}}}
+  return rem<=0;
+}
+function applyMerchantBonus(player,merchantId){
+  const cfg=MERCHANT_CONFIGS[merchantId];if(!cfg?.bonus)return;
+  if(cfg.bonus==='money'){player.money+=5;addLog(`  Merchant bonus: +£5`);}
+  if(cfg.bonus==='income'){advanceIncome(player,2);addLog(`  Merchant bonus: +2 income spaces`);}
+  if(cfg.bonus==='vp'){player.vp+=cfg.bonusAmt||2;addLog(`  Merchant bonus: +${cfg.bonusAmt||2} VP`);}
+  if(cfg.bonus==='develop'){for(const t of Object.keys(player.industryMat)){if(player.industryMat[t].length>0){player.industryMat[t].shift();addLog(`  Merchant bonus: Developed ${IND_DISPLAY[t]}`);break;}}}
+}
+function advanceIncome(player,spaces){player.income=Math.min(30,player.income+spaces);}
+
+function endTurn(){
+  const p=currentPlayer();
+  const isLastRound=G.era==='rail'&&G.round>=G.maxRoundsRail;
+  if(!isLastRound){
+    const inc=getIncomeAmount(p.income);
+    p.money+=inc;if(p.money<0)p.money=0;
+    addLog(`${p.name} takes income: £${inc}`);
+  }
+  while(p.hand.length<8&&G.drawDeck.length>0)p.hand.push(G.drawDeck.pop());
+  p.moneySpent=0;
+  G.currentPlayerIdx++;
+  if(G.currentPlayerIdx>=G.players.length){G.currentPlayerIdx=0;endRound();return;}
+  const next=currentPlayer();
+  G.actionsLeft=(G.round===1&&G.era==='canal')?1:2;
+  addLog(`--- ${next.name}'s turn ---`);
+  setStatus(`${next.name}'s turn — ${G.actionsLeft} action(s)`);
+  render();
+}
+
+function getIncomeAmount(level){
+  if(level<0)return level;
+  const t=[0,1,1,1,1,2,2,2,3,3,4,4,4,5,5,6,6,7,7,8,8,9,10,10,10,10,12,12,12,16,16,20];
+  return t[Math.min(level,t.length-1)];
+}
+
+function endRound(){
+  G.round++;
+  const max=G.era==='canal'?G.maxRoundsCanal:G.maxRoundsRail;
+  if(G.round>max){G.era==='canal'?endCanalEra():endGame();return;}
+  const spent=G.turnOrder.map(pi=>({pi,spent:G.players[pi].moneySpent}));
+  spent.sort((a,b)=>a.spent-b.spent);
+  G.turnOrder=spent.map(s=>s.pi);G.players.forEach(p=>p.moneySpent=0);
+  addLog(`=== Round ${G.round} / ${max} (${G.era==='canal'?'Canal':'Rail'} Era) ===`);
+  addLog(`Turn order: ${G.turnOrder.map(i=>PLAYER_NAMES[i]).join(' → ')}`);
+  G.currentPlayerIdx=0;G.actionsLeft=2;
+  setStatus(`Round ${G.round} — ${currentPlayer().name}'s turn`);
+  render();
+}
+
+function endCanalEra(){
+  addLog('=== END OF CANAL ERA — Scoring ===');
+  G.players.forEach(p=>{
+    let lv=0;p.links.forEach(link=>{
+      const adj=new Set();
+      CONNECTIONS.forEach(c=>{if(c.includes(link.from))adj.add(c[0]===link.from?c[1]:c[0]);if(c.includes(link.to))adj.add(c[0]===link.to?c[1]:c[0]);});
+      lv+=Math.max(1,[...adj].filter(l=>G.board[l]&&G.board[l].tiles.length>0).length);
+    });
+    p.vp+=lv;addLog(`${p.name}: +${lv} VP from links`);
+    let tv=0;Object.values(G.board).forEach(loc=>loc.tiles.forEach(t=>{if(t.player===p.id&&t.flipped){const d=INDUSTRIES[t.type]?.levels[t.level-1];tv+=d?.vp||0;}}));
+    p.vp+=tv;addLog(`${p.name}: +${tv} VP from flipped tiles`);
+  });
+  Object.values(G.board).forEach(loc=>{loc.tiles=loc.tiles.filter(t=>t.level>1);});
+  G.players.forEach(p=>p.links=[]);
+  Object.keys(MERCHANT_CONFIGS).forEach(loc=>G.merchantBeers[loc]=1);
+  G.drawDeck=[];
+  G.players.forEach(p=>{p.discard.push(...p.hand);p.hand=[];p.discard.reverse();G.drawDeck.push(...p.discard);p.discard=[];});
+  G.drawDeck=shuffle(G.drawDeck);
+  G.players.forEach(p=>{for(let i=0;i<8&&G.drawDeck.length>0;i++)p.hand.push(G.drawDeck.pop());p.discard=[G.drawDeck.pop()||{type:'location',loc:'birmingham'}];});
+  G.era='rail';G.round=1;G.currentPlayerIdx=0;G.actionsLeft=2;
+  addLog('=== RAIL ERA BEGINS ===');setStatus(`Rail Era! ${currentPlayer().name}'s turn`);
+  render();
+}
+
+function endGame(){
+  G.gameOver=true;addLog('=== END OF RAIL ERA — Final Scoring ===');
+  G.players.forEach(p=>{
+    let lv=0;p.links.forEach(link=>{
+      const adj=new Set();
+      CONNECTIONS.forEach(c=>{if(c.includes(link.from))adj.add(c[0]===link.from?c[1]:c[0]);if(c.includes(link.to))adj.add(c[0]===link.to?c[1]:c[0]);});
+      lv+=Math.max(1,[...adj].filter(l=>G.board[l]&&G.board[l].tiles.length>0).length);
+    });p.vp+=lv;
+    let tv=0;Object.values(G.board).forEach(loc=>loc.tiles.forEach(t=>{if(t.player===p.id&&t.flipped){const d=INDUSTRIES[t.type]?.levels[t.level-1];tv+=d?.vp||0;}}));
+    p.vp+=tv;
+  });
+  showScoring();
+}
+
+function showScoring(){
+  const sorted=[...G.players].sort((a,b)=>b.vp-a.vp||(b.income-a.income)||(b.money-a.money));
+  showModal(G.gameOver?'Final Scores — Game Over!':'Current Scores',()=>closeModal(),
+    sorted.map((p,i)=>({id:p.id,label:`${i===0?'👑 ':''}${p.name}: ${p.vp} VP | Income £${getIncomeAmount(p.income)}/round | £${p.money} cash`})));
+}
+
+function selectCard(card){
+  if(G.pendingActionStep!=='pick-card')return;
+  G.selectedCard=card;G.pendingActionStep='pick-location';renderHand();
+  if(G.selectedAction==='build')setStatus(`"${cardLabel(card)}" selected — now click a location on the board.`);
+  if(G.selectedAction==='network')setStatus(`"${cardLabel(card)}" selected — now click a green line to place a link.`);
+}
+
+// ── RENDER ──
+function render(){renderBoard();renderPlayers();renderHand();renderMarkets();renderResources();drawLinks();updateUI();}
+
+function renderBoard(){
+  const board=document.getElementById('board');
+  board.querySelectorAll('.location,.merchant').forEach(e=>e.remove());
+  LOCATIONS.forEach(loc=>{
+    const div=document.createElement('div');
+    div.className='location';div.style.left=(loc.x-35)+'px';div.style.top=(loc.y-20)+'px';
+    div.onclick=()=>clickLocation(loc.id);
+    const box=document.createElement('div');box.className='loc-box';
+    if(G.board[loc.id]?.tiles?.length>0)box.classList.add('has-tile');
+    const name=document.createElement('div');name.className='loc-name';name.textContent=loc.name;box.appendChild(name);
+    const slots=document.createElement('div');slots.className='loc-slots';
+    const usedTiles=G.board[loc.id]?.tiles||[];
+    loc.slots.forEach((slotType,si)=>{
+      const slot=document.createElement('div');slot.className='slot';
+      const tile=usedTiles[si];
+      if(tile){
+        slot.classList.add('p'+tile.player);if(tile.flipped)slot.classList.add('flipped');
+        slot.title=`${IND_DISPLAY[tile.type]} Lvl ${tile.level} (${PLAYER_NAMES[tile.player]})`;
+        slot.textContent=IND_ICONS[tile.type]||'?';
+      }else{
+        const icons={coal:'⬛',iron:'🟧',cotton:'🟦',manufacturer:'🟨',pottery:'🟫',brewery:'🟩',any:'·'};
+        slot.textContent=icons[slotType]||'·';slot.style.opacity='.4';slot.title=slotType;
+      }
+      slots.appendChild(slot);
+    });
+    box.appendChild(slots);div.appendChild(box);board.appendChild(div);
+  });
+  Object.entries(MERCHANT_CONFIGS).forEach(([locId,cfg])=>{
+    const loc=LOCATIONS.find(l=>l.id===locId);if(!loc)return;
+    const div=document.createElement('div');div.className='merchant';
+    div.style.left=(loc.x+30)+'px';div.style.top=(loc.y-10)+'px';
+    div.innerHTML=`<div class="mer-name">${LOC_DISPLAY[locId]||locId}</div><div>${cfg.icons.map(i=>IND_ICONS[i]||'?').join('')}${G.merchantBeers[locId]>0?'🍺':''}</div>`;
+    board.appendChild(div);
+  });
+}
+
+function drawLinks(){
+  const canvas=document.getElementById('links-canvas');const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,640,480);
+  CONNECTIONS.forEach(([a,b])=>{
+    const la=LOCATIONS.find(l=>l.id===a),lb=LOCATIONS.find(l=>l.id===b);if(!la||!lb)return;
+    ctx.beginPath();ctx.moveTo(la.x,la.y);ctx.lineTo(lb.x,lb.y);
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+  });
+  G.players.forEach(p=>{
+    p.links.forEach(link=>{
+      const la=LOCATIONS.find(l=>l.id===link.from),lb=LOCATIONS.find(l=>l.id===link.to);if(!la||!lb)return;
+      ctx.beginPath();ctx.moveTo(la.x,la.y);ctx.lineTo(lb.x,lb.y);
+      ctx.strokeStyle=PLAYER_COLORS[p.id];ctx.lineWidth=link.era==='rail'?3:2;ctx.stroke();
+    });
+  });
+  if(G.selectedAction==='network'&&G.pendingActionStep==='pick-location'){
+    CONNECTIONS.forEach(([a,b])=>{
+      const la=LOCATIONS.find(l=>l.id===a),lb=LOCATIONS.find(l=>l.id===b);if(!la||!lb)return;
+      const linked=G.players.some(p=>p.links.some(l=>(l.from===a&&l.to===b)||(l.from===b&&l.to===a)));if(linked)return;
+      ctx.beginPath();ctx.moveTo(la.x,la.y);ctx.lineTo(lb.x,lb.y);
+      ctx.strokeStyle='rgba(100,220,100,0.45)';ctx.lineWidth=9;ctx.stroke();
+    });
+    canvas.style.pointerEvents='auto';
+    canvas.onclick=(e)=>{
+      const rect=canvas.getBoundingClientRect();
+      const mx=(e.clientX-rect.left)*(640/rect.width),my=(e.clientY-rect.top)*(480/rect.height);
+      let best=null,bestDist=22;
+      CONNECTIONS.forEach(([a,b])=>{
+        const la=LOCATIONS.find(l=>l.id===a),lb=LOCATIONS.find(l=>l.id===b);if(!la||!lb)return;
+        const dx=lb.x-la.x,dy=lb.y-la.y,len2=dx*dx+dy*dy;
+        const t=Math.max(0,Math.min(1,((mx-la.x)*dx+(my-la.y)*dy)/len2));
+        const px=la.x+t*dx,py=la.y+t*dy;
+        const dist=Math.sqrt((mx-px)**2+(my-py)**2);
+        if(dist<bestDist){bestDist=dist;best=[a,b];}
+      });
+      if(best)clickConnection(best[0],best[1]);
+    };
+  }else{canvas.style.pointerEvents='none';canvas.onclick=null;}
+}
+
+function renderPlayers(){
+  const list=document.getElementById('players-list');list.innerHTML='';
+  const cp=currentPlayer();
+  G.players.forEach(p=>{
+    const div=document.createElement('div');
+    div.className=`player-card ${PLAYER_COLOR_CLASSES[p.id]}${p.id===cp.id?' active':''}`;
+    div.innerHTML=`<div class="p-header">
+      <div class="p-color" style="width:12px;height:12px;border-radius:50%;background:${PLAYER_COLORS[p.id]};flex-shrink:0"></div>
+      <span class="p-name">${p.name}${p.id===cp.id?' ◀':''}</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--color-text-secondary)">${p.links.length} links</span>
+    </div>
+    <div class="p-stats">
+      <div class="stat"><div class="stat-val">£${p.money}</div><div class="stat-lbl">Money</div></div>
+      <div class="stat"><div class="stat-val">${p.vp}</div><div class="stat-lbl">VP</div></div>
+      <div class="stat"><div class="stat-val">£${getIncomeAmount(p.income)}</div><div class="stat-lbl">Income</div></div>
+    </div>`;
+    list.appendChild(div);
+  });
+}
+
+function renderHand(){
+  const p=currentPlayer();
+  document.getElementById('cur-player-name').textContent=p.name;
+  document.getElementById('deck-count').textContent=G.drawDeck.length;
+  const handDiv=document.getElementById('hand-display');handDiv.innerHTML='';
+  if(p.hand.length===0){handDiv.innerHTML='<div style="font-size:11px;color:var(--color-text-secondary);padding:4px 0">No cards in hand</div>';return;}
+  p.hand.forEach(card=>{
+    const div=document.createElement('div');
+    const isSelected=G.selectedCard===card;
+    const cls=card.type==='wild-loc'?'wild-loc':card.type==='wild-ind'?'wild-ind':card.type==='location'?'location':'industry';
+    div.className=`card ${cls}${isSelected?' selected':''}`;
+    div.innerHTML=`<span class="card-icon">${cardIcon(card)}</span>
+      <span class="card-body">
+        <span class="card-type">${cardTypeLabel(card)}</span>
+        <span class="card-name">${cardLabel(card)}</span>
+      </span>`;
+    if(G.pendingActionStep==='pick-card')div.onclick=()=>selectCard(card);
+    handDiv.appendChild(div);
+  });
+}
+
+function renderMarkets(){
+  const coalDiv=document.getElementById('coal-market');coalDiv.innerHTML='<h3>Coal Market</h3>';
+  const coalByPrice={};G.coalMarket.forEach(s=>{if(!coalByPrice[s.price])coalByPrice[s.price]=[];coalByPrice[s.price].push(s);});
+  Object.entries(coalByPrice).sort(([a],[b])=>+a-+b).forEach(([price,slots])=>{
+    const row=document.createElement('div');row.className='market-row';
+    row.innerHTML=`<span class="market-price">£${price}</span>`;
+    slots.forEach(s=>{const c=document.createElement('div');c.className=s.filled?'market-cube coal-cube':'market-slot';row.appendChild(c);});
+    coalDiv.appendChild(row);
+  });
+  const ironDiv=document.getElementById('iron-market');ironDiv.innerHTML='<h3>Iron Market</h3>';
+  const ironByPrice={};G.ironMarket.forEach(s=>{if(!ironByPrice[s.price])ironByPrice[s.price]=[];ironByPrice[s.price].push(s);});
+  Object.entries(ironByPrice).sort(([a],[b])=>+a-+b).forEach(([price,slots])=>{
+    const row=document.createElement('div');row.className='market-row';
+    row.innerHTML=`<span class="market-price">£${price}</span>`;
+    slots.forEach(s=>{const c=document.createElement('div');c.className=s.filled?'market-cube iron-cube':'market-slot';row.appendChild(c);});
+    ironDiv.appendChild(row);
+  });
+}
+
+function renderResources(){
+  const div=document.getElementById('resources-display');
+  const tiles=Object.values(G.board).flatMap(l=>l.tiles);
+  div.innerHTML=`
+    <div>⬛ Coal: ${tiles.filter(t=>t.type==='coal'&&!t.flipped).reduce((s,t)=>s+(t.resources||0),0)}</div>
+    <div>🟧 Iron: ${tiles.filter(t=>t.type==='iron'&&!t.flipped).reduce((s,t)=>s+(t.resources||0),0)}</div>
+    <div>🟩 Beer: ${tiles.filter(t=>t.type==='brewery'&&!t.flipped).reduce((s,t)=>s+(t.resources||0),0)}</div>
+    <div>🍺 Merchant beer: ${Object.values(G.merchantBeers).reduce((s,v)=>s+v,0)}</div>`;
+}
+
+function updateUI(){
+  const p=currentPlayer();
+  document.getElementById('era-badge').textContent=G.era==='canal'?'Canal Era':'Rail Era';
+  document.getElementById('era-badge').className='era-badge '+(G.era==='canal'?'era-canal':'era-rail');
+  document.getElementById('round-num').textContent=G.round;
+  document.getElementById('round-total').textContent=G.era==='canal'?G.maxRoundsCanal:G.maxRoundsRail;
+  setStatus(`${p.name}'s turn — ${G.actionsLeft} action(s) left`);
+  const log=document.getElementById('game-log');
+  if(log)log.innerHTML=G.log.slice(-25).reverse().map(l=>`<div>${l}</div>`).join('');
+}
+
+function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+function addLog(msg){G.log.push(msg);const log=document.getElementById('game-log');if(log)log.innerHTML=G.log.slice(-25).reverse().map(l=>`<div>${l}</div>`).join('');}
+
+function showModal(title,callback,opts){
+  G.modalCallback=callback;G.modalSelected=opts[0]?.id??null;
+  document.getElementById('modal-title').textContent=title;
+  const optsDiv=document.getElementById('modal-opts');optsDiv.innerHTML='';
+  opts.forEach(opt=>{
+    const div=document.createElement('div');
+    div.className=`modal-opt${opt.id===G.modalSelected?' selected':''}`;
+    div.textContent=opt.label;
+    div.onclick=()=>{G.modalSelected=opt.id;optsDiv.querySelectorAll('.modal-opt').forEach(d=>d.classList.remove('selected'));div.classList.add('selected');};
+    optsDiv.appendChild(div);
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');G.modalCallback=null;G.modalSelected=null;}
+function confirmModal(){if(G.modalCallback)G.modalCallback();document.getElementById('modal-overlay').classList.remove('open');}
+
+initGame();
+</script>
 </body>
 </html>
